@@ -3,20 +3,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tkinter import filedialog
 from PIL import Image, ImageTk
-import tkinter as tk
+import pyperclip
 
 
 class ImgProcessing:
+    def __init__(self):
+        self.imgPIL = None
+        self.file_path = None
+
     def openTk(self, w, h):
-        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
-        if file_path:
-            img = Image.open(file_path)
-            img = img.resize((w, h))
+        self.file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
+        if self.file_path:
+            self.imgPIL = Image.open(self.file_path)
+            img = self.imgPIL.resize((w, h))
             tk_image = ImageTk.PhotoImage(img)
             return tk_image
 
     def saveTk(self):
-        pass
+        pyperclip.copy("test")
+        if self.imgPIL is not None:
+            new_path = self.file_path.split("/")
+            new_path[-1] = "TEST_" + new_path[-1]
+            new_path = "/".join(new_path)
+            self.imgPIL.save(new_path)
+            label = "Zapisano plik oraz skopiowano kod"
+        else:
+            label = "Nie wybrano pliku"
+        return label
 
     def imshow(img):
         if len(img.shape) == 2 or (len(img.shape) == 3 and img.shape[-1] == 1):

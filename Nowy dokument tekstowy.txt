@@ -1,0 +1,74 @@
+import tkinter as tk
+from tkinter import filedialog
+from PIL import Image, ImageTk
+
+
+class MainView:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Aplikacja do przetwarzania zdjęć")
+        # Pasek nawigacyjny
+        self.navbar = tk.Frame(self.master, bg='gray', height=50)
+        self.navbar.pack(side=tk.TOP, fill=tk.X)
+
+        # Przyciski nawigacyjne
+        self.button1 = tk.Button(self.navbar, text="Metoda 1", command=self.method1)
+        self.button1.pack(side=tk.LEFT, padx=10)
+        self.button1.bind("<Enter>", lambda event: self.button1.config(bg="lightblue"))
+        self.button1.bind("<Leave>", lambda event: self.button1.config(bg="lightgray"))
+
+        self.button2 = tk.Button(self.navbar, text="Metoda 2", command=self.method2)
+        self.button2.pack(side=tk.LEFT, padx=10)
+        self.button2.bind("<Enter>", lambda event: self.button2.config(bg="lightblue"))
+        self.button2.bind("<Leave>", lambda event: self.button2.config(bg="lightgray"))
+
+        self.button3 = tk.Button(self.navbar, text="Metoda 3", command=self.method3)
+        self.button3.pack(side=tk.LEFT, padx=10)
+        self.button3.bind("<Enter>", lambda event: self.button3.config(bg="lightblue"))
+        self.button3.bind("<Leave>", lambda event: self.button3.config(bg="lightgray"))
+
+        self.button4 = tk.Button(self.navbar, text="Metoda 4", command=self.method4)
+        self.button4.pack(side=tk.LEFT, padx=10)
+        self.button4.bind("<Enter>", lambda event: self.button4.config(bg="lightblue"))
+        self.button4.bind("<Leave>", lambda event: self.button4.config(bg="lightgray"))
+
+        self.canvas = tk.Canvas(self.master, width=400, height=400)
+        self.canvas.pack()
+
+    def method1(self):
+        print("Wywołano metodę 1")
+        '''
+
+        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
+        print(file_path)
+        if file_path:
+            pil_image = Image.open(file_path)
+            tk_image = ImageTk.PhotoImage(pil_image)
+
+            if isinstance(tk_image, ImageTk.PhotoImage):
+                print("1. Type OK")
+
+            self.canvas.delete("all")
+            self.canvas.create_image(200, 200, anchor='center', image=tk_image)
+        '''
+        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
+        if file_path:
+            tk_image = tk.PhotoImage(file=file_path)
+            tk_image = tk_image.subsample(2)
+            if isinstance(tk_image, tk.PhotoImage): print("1. Type OK")
+            self.canvas.delete("all")
+            self.canvas.create_image(200, 200, image=tk_image)
+
+
+
+    @staticmethod
+    def method2():
+        print("Wywołano metodę 2")
+
+    @staticmethod
+    def method3():
+        print("Wywołano metodę 3")
+
+    @staticmethod
+    def method4():
+        print("Wywołano metodę 4")

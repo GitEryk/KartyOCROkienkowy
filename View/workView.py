@@ -60,10 +60,8 @@ class WorkView:
             self.canvas.create_image(0, 0, anchor=tk.NW, image=self.tk_image)
 
     def call_method2(self):
-        print(f"Canvas szerokość: {self.canvas.winfo_width()} wysokosc {self.canvas.winfo_height()}")
         tk_image, text = self.img.OCR()
         tk_image = ImageTk.PhotoImage(tk_image)
-        print(f"TK szerokość: {tk_image.width()} wysokosc {tk_image.height()}")
         self.label.config(text=text)
         if tk_image is not None:
             self.tk_image = tk_image

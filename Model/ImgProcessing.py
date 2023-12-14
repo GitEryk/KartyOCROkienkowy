@@ -7,7 +7,6 @@ import pyperclip
 
 def openedImg(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    img = cv2.resize(img, (300, int(img.shape[0] * (300 / img.shape[1]))), interpolation=cv2.INTER_AREA)
     return img
 
 
@@ -33,9 +32,10 @@ def doubleSobelEx(img):
 
 
 def closedImg(img):
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 15))
     imgMorph = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
     ret, img = cv2.threshold(imgMorph, 70, 255, cv2.THRESH_BINARY)
+
     return img
 
 
@@ -96,11 +96,10 @@ class ImgProcessing:
         for index, contour in enumerate(con):
             (x, y, w, h) = cv2.boundingRect(contour)
             aspect_ratio = w / float(h)
-            if 2.5 < aspect_ratio < 4.0:
-                if (40 < w < 55) and (10 < h < 20):
+            if 3 < aspect_ratio < 3.5:
+                if (90 < w < 105) and (30 < h < 35):
                     goodBox.append((x, y, w, h))
         self.goodBox = sorted(goodBox, key=lambda x: x[0])
-        # return goodBox
 
     def getDigit(self, org_img):
         cardNumber = []
@@ -110,10 +109,10 @@ class ImgProcessing:
             # z orginalnego obrazu wycinamy tylko fragmenty, które nas interesują + padding 5px
             group = gray_img[yB - 5:yB + hB + 5, xB - 5:xB + wB + 5]
             ret, thresh_group = cv2.threshold(group, 141, 255, cv2.THRESH_BINARY)
+
             # na czarno-bialy lepiej wyciaga się kontury
             digit = cv2.findContours(thresh_group, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             digit = digit[0]
-            print(len(digit))
             ret, thresh_group = cv2.threshold(thresh_group, 127, 255, cv2.THRESH_BINARY_INV)
             # boxujemy każda cyfre je i sortujemy
             digitBox = [cv2.boundingRect(contour) for contour in digit]
@@ -133,15 +132,13 @@ class ImgProcessing:
                     predict.append(score)
                 group_result.append(str(np.argmax(predict)))
                 org_img = cv2.rectangle(org_img, (xB - 5, yB - 5), (xB + wB + 5, yB + hB + 5), color=(0, 255, 0))
-                org_img = cv2.putText(org_img, "".join(group_result), (xB, yB - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.65,
+                org_img = cv2.putText(org_img, "".join(group_result), (xB, yB - 15), cv2.FONT_HERSHEY_SIMPLEX, 1.3,
                                       (0, 255, 0), 2)
                 if j == 3:
                     break
-            # numer do skopiowania
             cardNumber.extend(group_result)
-        self.code = str(" ".join(cardNumber))
+        self.code = str("".join(cardNumber))
         pyperclip.copy(self.code)
-        print(self.code)
         return org_img
 
     def OCR(self):
@@ -153,8 +150,6 @@ class ImgProcessing:
             self.imgCV = cv2.cvtColor(self.imgCV, cv2.COLOR_BGR2RGB)
             self.imgCV = cv2.resize(self.imgCV, (600, 400), interpolation=cv2.INTER_CUBIC)
             img = self.imgCV
-            print(f"Po wysokość: {img.shape[0]} szerokość: {img.shape[1]}")
-            # imgOrg = cv2.resize(img, (300, int(img.shape[0] * (300 / img.shape[1]))), interpolation=cv2.INTER_AREA)
             img = openedImg(img)
             img = extract(img)
             img = doubleSobelEx(img)
@@ -162,5 +157,5 @@ class ImgProcessing:
             self.getContours(img)
             img = self.getDigit(self.imgCV)
             self.imgPIL = Image.fromarray(img)
-            print(f"2 Po wysokość: {self.imgPIL.height} szerokość: {self.imgPIL.width}")
+
         return self.imgPIL, self.label

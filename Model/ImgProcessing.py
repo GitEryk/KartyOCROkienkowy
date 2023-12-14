@@ -1,15 +1,52 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import pyperclip
+
+
+def openedImg(img):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = cv2.resize(img, (300, int(img.shape[0] * (300 / img.shape[1]))), interpolation=cv2.INTER_AREA)
+    return img
+
+
+def sobelEx(img, xaxis=1, yaxis=0):
+    x = cv2.Sobel(img, ddepth=cv2.CV_64F, dx=xaxis, dy=yaxis, ksize=-1)
+    x = np.absolute(x)
+    (min_val, max_val) = (np.min(x), np.max(x))
+    x = (255 * ((x - min_val) / (max_val - min_val)))
+    x = x.astype(np.uint8)
+    return x
+
+
+def extract(img):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
+    open_morph = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+    return img - open_morph
+
+
+def doubleSobelEx(img):
+    x = sobelEx(img, xaxis=1, yaxis=0)
+    y = sobelEx(img, xaxis=0, yaxis=1)
+    return x + y
+
+
+def closedImg(img):
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
+    imgMorph = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+    ret, img = cv2.threshold(imgMorph, 70, 255, cv2.THRESH_BINARY)
+    return img
 
 
 class ImgProcessing:
     def __init__(self):
         self.imgPIL = None
         self.file_path = None
+        self.imgCV = None
+        self.code = None
+        self.label = None
+        self.goodBox = []
 
     def openTk(self, w, h):
         self.file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
@@ -20,25 +57,21 @@ class ImgProcessing:
             return tk_image
 
     def saveTk(self):
-        pyperclip.copy("test")
+        if self.code is not None:
+            pyperclip.copy(self.code)
         if self.imgPIL is not None:
             new_path = self.file_path.split("/")
             new_path[-1] = "TEST_" + new_path[-1]
             new_path = "/".join(new_path)
             self.imgPIL.save(new_path)
-            label = "Zapisano plik oraz skopiowano kod"
+            self.label = "Zapisano plik oraz skopiowano kod"
         else:
-            label = "Nie wybrano pliku"
-        return label
+            self.label = "Nie wybrano pliku"
+        return self.label
 
-    def imshow(img):
-        if len(img.shape) == 2 or (len(img.shape) == 3 and img.shape[-1] == 1):
-            plt.imshow(img, cmap="gray")
-        else:
-            plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-
-    def initTemple(self):
-        template = cv2.imread("12/12.1/images/ocr_a.png")
+    @staticmethod
+    def initTemple():
+        template = cv2.imread("assets/cardnumber.png")
         gray_temp = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
         gray_temp = cv2.threshold(gray_temp, 10, 255, cv2.THRESH_BINARY_INV)[1]
         contours = cv2.findContours(gray_temp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -56,35 +89,6 @@ class ImgProcessing:
             digits[index] = roi
         return digits
 
-    def openedImg(self, img):
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img = cv2.resize(img, (300, int(img.shape[0] * (300 / img.shape[1]))), interpolation=cv2.INTER_AREA)
-        return img
-
-    def extract(self, img):
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
-        open_morph = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
-        return img - open_morph
-
-    def sobelEx(self, img, xaxis=1, yaxis=0):
-        x = cv2.Sobel(img, ddepth=cv2.CV_64F, dx=xaxis, dy=yaxis, ksize=-1)
-        x = np.absolute(x)
-        (min_val, max_val) = (np.min(x), np.max(x))
-        x = (255 * ((x - min_val) / (max_val - min_val)))
-        x = x.astype(np.uint8)
-        return x
-
-    def doubleSobelEx(self, img):
-        x = self.sobelEx(img, xaxis=1, yaxis=0)
-        y = self.sobelEx(img, xaxis=0, yaxis=1)
-        return x + y
-
-    def closedImg(self, img):
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
-        imgMorph = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
-        ret, img = cv2.threshold(imgMorph, 70, 255, cv2.THRESH_BINARY)
-        return img
-
     def getContours(self, img):
         con = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         con = con[0]
@@ -92,16 +96,16 @@ class ImgProcessing:
         for index, contour in enumerate(con):
             (x, y, w, h) = cv2.boundingRect(contour)
             aspect_ratio = w / float(h)
-            if aspect_ratio > 2.5 and aspect_ratio < 4.0:
-                if (w > 40 and w < 55) and (h > 10 and h < 20):
+            if 2.5 < aspect_ratio < 4.0:
+                if (40 < w < 55) and (10 < h < 20):
                     goodBox.append((x, y, w, h))
-        goodBox = sorted(goodBox, key=lambda x: x[0])
-        return goodBox
+        self.goodBox = sorted(goodBox, key=lambda x: x[0])
+        # return goodBox
 
-    def getDigit(self, org_img, goodBox):
+    def getDigit(self, org_img):
         cardNumber = []
         gray_img = cv2.cvtColor(org_img, cv2.COLOR_BGR2GRAY)
-        for (i, (xB, yB, wB, hB)) in enumerate(goodBox):
+        for (i, (xB, yB, wB, hB)) in enumerate(self.goodBox):
             group_result = []
             # z orginalnego obrazu wycinamy tylko fragmenty, które nas interesują + padding 5px
             group = gray_img[yB - 5:yB + hB + 5, xB - 5:xB + wB + 5]
@@ -115,13 +119,12 @@ class ImgProcessing:
             digitBox = [cv2.boundingRect(contour) for contour in digit]
             digitBox = sorted(digitBox, key=lambda x: x[0])
             # wyciagamy kazda cyfre i resizujemy ja do wielkosci wzornika
-            for i, box in enumerate(digitBox):
+            for j, box in enumerate(digitBox):
                 (x, y, w, h) = box
                 # wycinamy cyfry z czarno-białego boxa
                 roi = thresh_group[y:y + h, x:x + w]
                 roi = cv2.resize(roi, (54, 85))
-                # imshow(roi), plt.title(i)
-                # plt.show()
+
                 predict = []
                 digits = self.initTemple()
                 for (digit, digitRoi) in digits.items():
@@ -132,40 +135,32 @@ class ImgProcessing:
                 org_img = cv2.rectangle(org_img, (xB - 5, yB - 5), (xB + wB + 5, yB + hB + 5), color=(0, 255, 0))
                 org_img = cv2.putText(org_img, "".join(group_result), (xB, yB - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.65,
                                       (0, 255, 0), 2)
-                if i == 3: break
+                if j == 3:
+                    break
             # numer do skopiowania
             cardNumber.extend(group_result)
-        print(cardNumber)
+        self.code = str(" ".join(cardNumber))
+        pyperclip.copy(self.code)
+        print(self.code)
         return org_img
 
-    def OCRnumber(self, img):
-        imgOrg = cv2.resize(img, (300, int(img.shape[0] * (300 / img.shape[1]))), interpolation=cv2.INTER_AREA)
-        img = self.openedImg(img)
-        # imshow(img)
-        # plt.show()
-        img = self.extract(img)
-        # imshow(img)
-        # plt.show()
-        img = self.doubleSobelEx(img)
-        # imshow(img)
-        # plt.show()
-        img = self.closedImg(img)
-        # imshow(img), plt.title("MORPHO CLOSE")
-        # plt.show()
-        imgOrg = self.getDigit(imgOrg, self.getContours(img))
-        return imgOrg
-
-
-'''
-path = "12/12.2/images/credit_card_0"
-cards = [f"{path}{n}.png" for n in range(1, 6)]
-
-for card in cards:
-    img = cv2.imread(card)
-    imshow(img)
-    plt.show()
-    img = OCRnumber(img)
-    imshow(img)
-    plt.show()
-
-'''
+    def OCR(self):
+        if self.file_path is None:
+            print("Nie wybrano obrazu")
+            self.label = "Nie wybrano obrazu"
+        else:
+            self.imgCV = cv2.imread(self.file_path)
+            self.imgCV = cv2.cvtColor(self.imgCV, cv2.COLOR_BGR2RGB)
+            self.imgCV = cv2.resize(self.imgCV, (600, 400), interpolation=cv2.INTER_CUBIC)
+            img = self.imgCV
+            print(f"Po wysokość: {img.shape[0]} szerokość: {img.shape[1]}")
+            # imgOrg = cv2.resize(img, (300, int(img.shape[0] * (300 / img.shape[1]))), interpolation=cv2.INTER_AREA)
+            img = openedImg(img)
+            img = extract(img)
+            img = doubleSobelEx(img)
+            img = closedImg(img)
+            self.getContours(img)
+            img = self.getDigit(self.imgCV)
+            self.imgPIL = Image.fromarray(img)
+            print(f"2 Po wysokość: {self.imgPIL.height} szerokość: {self.imgPIL.width}")
+        return self.imgPIL, self.label

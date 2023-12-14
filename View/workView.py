@@ -1,4 +1,7 @@
 import tkinter as tk
+
+from PIL import ImageTk
+
 from Model.ImgProcessing import ImgProcessing
 
 
@@ -32,7 +35,7 @@ class WorkView:
         self.button3.bind("<Enter>", lambda event: self.button3.config(bg="lightblue"))
         self.button3.bind("<Leave>", lambda event: self.button3.config(bg="#f0f0f0"))
 
-        self.button4 = tk.Button(self.navbar, text="Settings", width=10, command=self.call_method2)
+        self.button4 = tk.Button(self.navbar, text="Settings", width=10, command=self.call_method4)
         self.button4.pack(side=tk.RIGHT, padx=10)
         self.button4.bind("<Enter>", lambda event: self.button4.config(bg="lightblue"))
         self.button4.bind("<Leave>", lambda event: self.button4.config(bg="#f0f0f0"))
@@ -48,8 +51,8 @@ class WorkView:
         self.label.pack(side=tk.BOTTOM, fill=tk.X)
 
     def call_method1(self):
-        w = self.canvas.winfo_width() - 2
-        h = self.canvas.winfo_height() - 2
+        w = self.canvas.winfo_width()
+        h = self.canvas.winfo_height()
         tk_image = self.img.openTk(w, h)
         if tk_image:
             self.tk_image = tk_image
@@ -57,7 +60,18 @@ class WorkView:
             self.canvas.create_image(0, 0, anchor=tk.NW, image=self.tk_image)
 
     def call_method2(self):
-        pass
+        print(f"Canvas szerokość: {self.canvas.winfo_width()} wysokosc {self.canvas.winfo_height()}")
+        tk_image, text = self.img.OCR()
+        tk_image = ImageTk.PhotoImage(tk_image)
+        print(f"TK szerokość: {tk_image.width()} wysokosc {tk_image.height()}")
+        self.label.config(text=text)
+        if tk_image is not None:
+            self.tk_image = tk_image
+            self.canvas.delete("all")
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.tk_image)
 
     def call_method3(self):
         self.label.config(text=self.img.saveTk())
+
+    def call_method4(self):
+        pass

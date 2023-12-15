@@ -1,8 +1,7 @@
 import tkinter as tk
-
 from PIL import ImageTk
-
 from Model.ImgProcessing import ImgProcessing
+from View.settingView import SettingsView
 
 
 class WorkView:
@@ -15,6 +14,7 @@ class WorkView:
 
         # class init
         self.img = ImgProcessing()
+        self.settings = None
 
         # Pasek nawigacyjny
         self.navbar = tk.Frame(self.master, bg='gray', height=50)
@@ -72,4 +72,5 @@ class WorkView:
         self.label.config(text=self.img.saveTk())
 
     def call_method4(self):
-        pass
+        settingWindow = tk.Toplevel(self.master)
+        self.settings = SettingsView(settingWindow)

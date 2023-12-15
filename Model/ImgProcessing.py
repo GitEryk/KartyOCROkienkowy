@@ -4,7 +4,15 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import pyperclip
 
-
+def karta(img):
+    gray_temp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    con = cv2.findContours(gray_temp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    con = con[0]
+    print(len(con))
+    for i, (x,y,w,h) in enumerate(con):
+        print(f"{i+1}. x:{x} y:{y} w:{w} h{h}")
+        cv2.rectangle(img, (x),(h), (0,255,0))
+        cv2.imwrite("C:/Users/Lenovo//Desktop/KON.jpg", img)
 def openedImg(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
@@ -22,6 +30,8 @@ def sobelEx(img, xaxis=1, yaxis=0):
 def extract(img):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
     open_morph = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+    o = img - open_morph
+    cv2.imwrite("C:/Users/Lenovo//Desktop/open.jpg", o)
     return img - open_morph
 
 
@@ -35,7 +45,7 @@ def closedImg(img):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 15))
     imgMorph = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
     ret, img = cv2.threshold(imgMorph, 70, 255, cv2.THRESH_BINARY)
-
+    cv2.imwrite("C:/Users/Lenovo/Desktop/close.jpg", img)
     return img
 
 
@@ -92,11 +102,14 @@ class ImgProcessing:
     def getContours(self, img):
         con = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         con = con[0]
+        print(f"con: {len(con)}")
         goodBox = []
         for index, contour in enumerate(con):
             (x, y, w, h) = cv2.boundingRect(contour)
             aspect_ratio = w / float(h)
-            if 3 < aspect_ratio < 3.5:
+            print(f"aspect_ratio:{aspect_ratio}")
+            if 2.8 < aspect_ratio < 3.2:
+                print(f"w:{w} h:{h}")
                 if (90 < w < 105) and (30 < h < 35):
                     goodBox.append((x, y, w, h))
         self.goodBox = sorted(goodBox, key=lambda x: x[0])
@@ -147,6 +160,7 @@ class ImgProcessing:
             self.label = "Nie wybrano obrazu"
         else:
             self.imgCV = cv2.imread(self.file_path)
+            karta(self.imgCV)
             self.imgCV = cv2.cvtColor(self.imgCV, cv2.COLOR_BGR2RGB)
             self.imgCV = cv2.resize(self.imgCV, (600, 400), interpolation=cv2.INTER_CUBIC)
             img = self.imgCV

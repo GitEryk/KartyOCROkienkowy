@@ -1,18 +1,24 @@
+import json
+from tkinter import filedialog
+
 import cv2
 import numpy as np
-from tkinter import filedialog
-from PIL import Image, ImageTk
 import pyperclip
+from PIL import Image, ImageTk
 
+'''
 def karta(img):
     gray_temp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     con = cv2.findContours(gray_temp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     con = con[0]
     print(len(con))
-    for i, (x,y,w,h) in enumerate(con):
-        print(f"{i+1}. x:{x} y:{y} w:{w} h{h}")
-        cv2.rectangle(img, (x),(h), (0,255,0))
+    for i, (x, y, w, h) in enumerate(con):
+        print(f"{i + 1}. x:{x} y:{y} w:{w} h{h}")
+        cv2.rectangle(img, (x), (h), (0, 255, 0))
         cv2.imwrite("C:/Users/Lenovo//Desktop/KON.jpg", img)
+'''
+
+
 def openedImg(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
@@ -53,10 +59,31 @@ class ImgProcessing:
     def __init__(self):
         self.imgPIL = None
         self.file_path = None
+        self.file_pathJson = None
         self.imgCV = None
         self.code = None
         self.label = None
         self.goodBox = []
+
+    def loadSetting(self, path=None):
+        if path is None:
+            self.file_pathJson = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
+        else:
+            self.file_pathJson = path
+
+        if self.file_pathJson:
+            with open(self.file_pathJson, 'r') as file:
+                try:
+                    data = json.load(file)
+                    label = "Załadowano plik"
+                    return data, label
+                except json.JSONDecodeError as e:
+                    print(f"Błąd dekodowania pliku JSON: {e}")
+                    label = f"Błąd dekodowania pliku JSON: {e}"
+                    return None, label
+        else:
+            label = "Proszę wybrać plik JSON."
+            return None, label
 
     def openTk(self, w, h):
         self.file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
@@ -160,7 +187,6 @@ class ImgProcessing:
             self.label = "Nie wybrano obrazu"
         else:
             self.imgCV = cv2.imread(self.file_path)
-            karta(self.imgCV)
             self.imgCV = cv2.cvtColor(self.imgCV, cv2.COLOR_BGR2RGB)
             self.imgCV = cv2.resize(self.imgCV, (600, 400), interpolation=cv2.INTER_CUBIC)
             img = self.imgCV

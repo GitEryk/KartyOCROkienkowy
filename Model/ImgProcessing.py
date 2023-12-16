@@ -1,22 +1,9 @@
-import json
 from tkinter import filedialog
-
 import cv2
 import numpy as np
 import pyperclip
 from PIL import Image, ImageTk
-
-'''
-def karta(img):
-    gray_temp = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    con = cv2.findContours(gray_temp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    con = con[0]
-    print(len(con))
-    for i, (x, y, w, h) in enumerate(con):
-        print(f"{i + 1}. x:{x} y:{y} w:{w} h{h}")
-        cv2.rectangle(img, (x), (h), (0, 255, 0))
-        cv2.imwrite("C:/Users/Lenovo//Desktop/KON.jpg", img)
-'''
+from Model.LoadJson import LoadJson
 
 
 def openedImg(img):
@@ -55,6 +42,26 @@ def closedImg(img):
     return img
 
 
+def initTemple():
+    template = cv2.imread("assets/cardnumber.png")
+    gray_temp = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+    gray_temp = cv2.threshold(gray_temp, 10, 255, cv2.THRESH_BINARY_INV)[1]
+    contours = cv2.findContours(gray_temp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0]
+    digitsBox = [cv2.boundingRect(contour) for contour in contours]
+    digitsBox = sorted(digitsBox, key=lambda x: x[0])
+    maxWidth = max([digit[2] for digit in digitsBox])
+    maxHeight = max([digit[3] for digit in digitsBox])
+    digits = {}  # krotka
+    for (index, box) in enumerate(digitsBox):
+        (x, y, w, h) = box
+        roi = gray_temp[y:y + h, x:x + w]
+        roi = cv2.resize(roi, (maxWidth, maxHeight))
+        roi = cv2.threshold(roi, 10, 255, cv2.THRESH_BINARY_INV)[1]
+        digits[index] = roi
+    return digits
+
+
 class ImgProcessing:
     def __init__(self):
         self.imgPIL = None
@@ -64,26 +71,34 @@ class ImgProcessing:
         self.code = None
         self.label = None
         self.goodBox = []
+        self.ratio1 = None
+        self.ratio2 = None
+        self.w1 = None
+        self.w2 = None
+        self.h1 = None
+        self.h2 = None
+        self.thresh = None
+        self.loadJson = LoadJson()
+        self.importSettings()
 
-    def loadSetting(self, path=None):
-        if path is None:
-            self.file_pathJson = filedialog.askopenfilename(filetypes=[("JSON files", "*.json")])
-        else:
-            self.file_pathJson = path
-
-        if self.file_pathJson:
-            with open(self.file_pathJson, 'r') as file:
-                try:
-                    data = json.load(file)
-                    label = "Załadowano plik"
-                    return data, label
-                except json.JSONDecodeError as e:
-                    print(f"Błąd dekodowania pliku JSON: {e}")
-                    label = f"Błąd dekodowania pliku JSON: {e}"
-                    return None, label
-        else:
-            label = "Proszę wybrać plik JSON."
-            return None, label
+    def setParameter(self, setting):
+        self.ratio1 = setting["ratio1"]
+        self.ratio2 = setting["ratio2"]
+        self.w1 = setting["w1"]
+        self.w2 = setting["w2"]
+        self.h1 = setting["h1"]
+        self.h2 = setting["h2"]
+        self.thresh = setting["thresh"]
+    def importSettings(self):
+        setting, _ = self.loadJson.importSetting(
+            path=r"C:\Users\Lenovo\Desktop\pythonProject\Assets\cardcode_setting.json")
+        if setting is not None:
+            self.setParameter(setting)
+        print(f"IMPORT: {self.ratio1}")
+    def useSettings(self, setting):
+        if setting is not None:
+            self.setParameter(setting)
+        print(f"USE: {self.ratio1}")
 
     def openTk(self, w, h):
         self.file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.jpeg;*.png")])
@@ -106,26 +121,6 @@ class ImgProcessing:
             self.label = "Nie wybrano pliku"
         return self.label
 
-    @staticmethod
-    def initTemple():
-        template = cv2.imread("assets/cardnumber.png")
-        gray_temp = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
-        gray_temp = cv2.threshold(gray_temp, 10, 255, cv2.THRESH_BINARY_INV)[1]
-        contours = cv2.findContours(gray_temp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = contours[0]
-        digitsbox = [cv2.boundingRect(contour) for contour in contours]
-        digitsbox = sorted(digitsbox, key=lambda x: x[0])
-        maxwidth = max([digit[2] for digit in digitsbox])
-        maxheight = max([digit[3] for digit in digitsbox])
-        digits = {}  # krotka
-        for (index, box) in enumerate(digitsbox):
-            (x, y, w, h) = box
-            roi = gray_temp[y:y + h, x:x + w]
-            roi = cv2.resize(roi, (maxwidth, maxheight))
-            roi = cv2.threshold(roi, 10, 255, cv2.THRESH_BINARY_INV)[1]
-            digits[index] = roi
-        return digits
-
     def getContours(self, img):
         con = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         con = con[0]
@@ -135,9 +130,9 @@ class ImgProcessing:
             (x, y, w, h) = cv2.boundingRect(contour)
             aspect_ratio = w / float(h)
             print(f"aspect_ratio:{aspect_ratio}")
-            if 2.8 < aspect_ratio < 3.2:
+            if self.ratio1 < aspect_ratio < self.ratio2:
                 print(f"w:{w} h:{h}")
-                if (90 < w < 105) and (30 < h < 35):
+                if (self.w1 < w < self.w2) and (self.h1 < h <self.h2):
                     goodBox.append((x, y, w, h))
         self.goodBox = sorted(goodBox, key=lambda x: x[0])
 
@@ -153,7 +148,7 @@ class ImgProcessing:
             # na czarno-bialy lepiej wyciaga się kontury
             digit = cv2.findContours(thresh_group, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             digit = digit[0]
-            ret, thresh_group = cv2.threshold(thresh_group, 127, 255, cv2.THRESH_BINARY_INV)
+            ret, thresh_group = cv2.threshold(thresh_group, self.thresh, 255, cv2.THRESH_BINARY_INV)
             # boxujemy każda cyfre je i sortujemy
             digitBox = [cv2.boundingRect(contour) for contour in digit]
             digitBox = sorted(digitBox, key=lambda x: x[0])
@@ -165,7 +160,7 @@ class ImgProcessing:
                 roi = cv2.resize(roi, (54, 85))
 
                 predict = []
-                digits = self.initTemple()
+                digits = initTemple()
                 for (digit, digitRoi) in digits.items():
                     result = cv2.matchTemplate(roi, digitRoi, cv2.TM_CCOEFF)
                     (_, score, _, _) = cv2.minMaxLoc(result)

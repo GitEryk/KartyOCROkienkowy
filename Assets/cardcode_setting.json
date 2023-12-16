@@ -1,10 +1,10 @@
 {
-  "name": "card",
   "ratio1": 2.8,
-  "ratio2": 3.2,
+  "ratio2": 3.5,
   "w1": 90,
   "w2": 105,
   "h1": 30,
   "h2": 35,
-  "thresh": 127
+  "thresh": 127,
+  "name": "card"
 }

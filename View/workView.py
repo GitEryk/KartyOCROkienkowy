@@ -72,6 +72,8 @@ class WorkView:
         self.label.config(text=self.img.saveTk())
 
     def call_method4(self):
-        if self.settings is None or not self.settings.master.winfo_exists():
-            settingWindow = tk.Toplevel(self.master)
-            self.settings = SettingsView(settingWindow)
+        print("WORKVIEW")
+        settingWindow = tk.Toplevel(self.master)
+        settingWindow.attributes('-topmost', 1)
+        self.settings = SettingsView(settingWindow, self.img)
+

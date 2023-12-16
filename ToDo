@@ -1,5 +1,3 @@
-settingView - metoda callread niech wczytuje JSONA i uzupełnia pola
-Stwórz model do tego widoku i niech pozwala na import jsona i export
-settingView - przycisk save zamyka okno i zminia parametry w immProces
+
 imgProcessing - zrob metode do sklowania zdjęcia aby na nim była tylko karta
 imgProcessing - popraw wydajność kart

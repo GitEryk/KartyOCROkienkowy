@@ -6,11 +6,18 @@ from PIL import Image, ImageTk
 from Model.LoadJson import LoadJson
 
 
+def goodSize(img):
+    ret, imgThresh = cv2.threshold(img, 200, 255, type=cv2.THRESH_BINARY_INV)
+    con = cv2.findContours(imgThresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    con = con[0]
+    newSize = []
+    for index, contour in enumerate(con):
+        (x, y, w, h) = cv2.boundingRect(contour)
+        newSize = (x, y, w, h)
+    return newSize
 def openedImg(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
-
-
 def sobelEx(img, xaxis=1, yaxis=0):
     x = cv2.Sobel(img, ddepth=cv2.CV_64F, dx=xaxis, dy=yaxis, ksize=-1)
     x = np.absolute(x)
@@ -24,7 +31,7 @@ def extract(img):
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 3))
     open_morph = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
     o = img - open_morph
-    cv2.imwrite("C:/Users/Lenovo//Desktop/open.jpg", o)
+    cv2.imwrite("C:/Users/Lenovo/Desktop/open_morph.jpg", o)
     return img - open_morph
 
 
@@ -182,9 +189,17 @@ class ImgProcessing:
             self.label = "Nie wybrano obrazu"
         else:
             self.imgCV = cv2.imread(self.file_path)
+            imgGraySIZE = cv2.cvtColor(self.imgCV, cv2.COLOR_BGR2GRAY)
             self.imgCV = cv2.cvtColor(self.imgCV, cv2.COLOR_BGR2RGB)
+            cv2.imwrite("C:/Users/Lenovo/Desktop/oldSizeSelf.jpg", self.imgCV)
+            size = goodSize(imgGraySIZE)
+            (x, y, w, h) = size
+            self.imgCV = self.imgCV[y:h, x:w]
+            cv2.imwrite("C:/Users/Lenovo/Desktop/cutSelf.jpg",self.imgCV)
             self.imgCV = cv2.resize(self.imgCV, (600, 400), interpolation=cv2.INTER_CUBIC)
+            cv2.imwrite("C:/Users/Lenovo/Desktop/newSizeSelf.jpg", self.imgCV)
             img = self.imgCV
+            cv2.imwrite("C:/Users/Lenovo/Desktop/newSizeIMG.jpg", img)
             img = openedImg(img)
             img = extract(img)
             img = doubleSobelEx(img)

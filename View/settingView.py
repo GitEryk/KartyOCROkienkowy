@@ -138,11 +138,3 @@ class SettingsView:
     def call_method3(self):
         self.ImgPre.useSettings(self.getData())
         self.master.destroy()
-
-
-"""if __name__ == "View.settingView":
-    root = tk.Tk()
-    app = SettingsView(root)
-    root.geometry("300x200")
-    root.mainloop()
-"""
